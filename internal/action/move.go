@@ -342,7 +342,7 @@ func MoveTo(toFunc func() (data.Position, bool)) error {
 		}
 
 		// Continue moving
-		WaitForAllMembersWhenLeveling()
+		//WaitForAllMembersWhenLeveling()
 		previousIterationPosition = ctx.Data.PlayerUnit.Position
 
 		if lastMovement {

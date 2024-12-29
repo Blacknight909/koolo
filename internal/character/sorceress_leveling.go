@@ -76,23 +76,19 @@ func (s SorceressLeveling) KillMonsterSequence(
 
 		lvl, _ := s.Data.PlayerUnit.FindStat(stat.Level, 0)
 		if s.Data.PlayerUnit.MPPercent() < 15 && lvl.Value < 15 {
-			s.Logger.Debug("Low mana, using primary attack")
+			s.Logger.Debug("Low mana, using melee attack")
+			// Ensure that PrimaryAttack is mapped to a melee attack
 			step.PrimaryAttack(id, 1, false, step.Distance(1, SorceressLevelingMeleeDistance))
 		} else {
+			// Prefer Blizzard and Ice skills exclusively
 			if _, found := s.Data.KeyBindings.KeyBindingForSkill(skill.Blizzard); found {
 				s.Logger.Debug("Using Blizzard")
 				step.SecondaryAttack(skill.Blizzard, id, 1, step.Distance(SorceressLevelingMinDistance, SorceressLevelingMaxDistance))
-			} else if _, found := s.Data.KeyBindings.KeyBindingForSkill(skill.Meteor); found {
-				s.Logger.Debug("Using Meteor")
-				step.SecondaryAttack(skill.Meteor, id, 1, step.Distance(SorceressLevelingMinDistance, SorceressLevelingMaxDistance))
-			} else if _, found := s.Data.KeyBindings.KeyBindingForSkill(skill.FireBall); found {
-				s.Logger.Debug("Using FireBall")
-				step.SecondaryAttack(skill.FireBall, id, 4, step.Distance(SorceressLevelingMinDistance, SorceressLevelingMaxDistance))
 			} else if _, found := s.Data.KeyBindings.KeyBindingForSkill(skill.IceBolt); found {
 				s.Logger.Debug("Using IceBolt")
 				step.SecondaryAttack(skill.IceBolt, id, 4, step.Distance(SorceressLevelingMinDistance, SorceressLevelingMaxDistance))
 			} else {
-				s.Logger.Debug("No secondary skills available, using primary attack")
+				s.Logger.Debug("No secondary skills available, using melee attack")
 				step.PrimaryAttack(id, 1, false, step.Distance(1, SorceressLevelingMeleeDistance))
 			}
 		}
@@ -145,8 +141,8 @@ func (s SorceressLeveling) staticFieldCasts() int {
 
 func (s SorceressLeveling) ShouldResetSkills() bool {
 	lvl, _ := s.Data.PlayerUnit.FindStat(stat.Level, 0)
-	if lvl.Value >= 24 && s.Data.PlayerUnit.Skills[skill.FireBall].Level > 1 {
-		s.Logger.Info("Resetting skills: Level 24+ and FireBall level > 1")
+	if lvl.Value >= 24 && s.Data.PlayerUnit.Skills[skill.Blizzard].Level > 1 {
+		s.Logger.Info("Resetting skills: Level 24+ and Blizzard level > 1")
 		return true
 	}
 	return false
@@ -168,12 +164,9 @@ func (s SorceressLeveling) SkillsToBind() (skill.ID, []skill.ID) {
 		skillBindings = append(skillBindings, skill.Teleport)
 	}
 
+	// Prioritize Blizzard over IceBolt
 	if s.Data.PlayerUnit.Skills[skill.Blizzard].Level > 0 {
 		skillBindings = append(skillBindings, skill.Blizzard)
-	} else if s.Data.PlayerUnit.Skills[skill.Meteor].Level > 0 {
-		skillBindings = append(skillBindings, skill.Meteor)
-	} else if s.Data.PlayerUnit.Skills[skill.FireBall].Level > 0 {
-		skillBindings = append(skillBindings, skill.FireBall)
 	} else if s.Data.PlayerUnit.Skills[skill.IceBolt].Level > 0 {
 		skillBindings = append(skillBindings, skill.IceBolt)
 	}
@@ -181,8 +174,8 @@ func (s SorceressLeveling) SkillsToBind() (skill.ID, []skill.ID) {
 	mainSkill := skill.AttackSkill
 	if s.Data.PlayerUnit.Skills[skill.Blizzard].Level > 0 {
 		mainSkill = skill.Blizzard
-	} else if s.Data.PlayerUnit.Skills[skill.Meteor].Level > 0 {
-		mainSkill = skill.Meteor
+	} else if s.Data.PlayerUnit.Skills[skill.IceBolt].Level > 0 {
+		mainSkill = skill.IceBolt
 	}
 
 	s.Logger.Info("Skills bound", "mainSkill", mainSkill, "skillBindings", skillBindings)
@@ -210,23 +203,16 @@ func (s SorceressLeveling) SkillPoints() []skill.ID {
 	var skillPoints []skill.ID
 
 	if lvl.Value < 24 {
+		// Pure Ice build: prioritize IceBolt, FrozenArmor, StaticField, and Telekinesis
 		skillPoints = []skill.ID{
-			skill.FireBolt,
-			skill.FireBolt,
-			skill.FireBolt,
+			skill.IceBolt,
+			skill.IceBolt,
+			skill.IceBolt,
 			skill.FrozenArmor,
-			skill.FireBolt,
+			skill.IceBolt,
 			skill.StaticField,
-			skill.FireBolt,
-			skill.Warmth,
-			skill.FireBolt,
-			skill.Telekinesis,
-			skill.FireBolt,
-			skill.FireBolt,
-			skill.FireBolt,
-			skill.FireBolt,
 			skill.IceBolt,
-			skill.IceBolt,
+			skill.Telekinesis, // Utility skill
 			skill.IceBolt,
 			skill.Teleport,
 			skill.IceBolt,
@@ -234,69 +220,35 @@ func (s SorceressLeveling) SkillPoints() []skill.ID {
 			skill.IceBolt,
 			skill.IceBolt,
 			skill.IceBolt,
+			skill.IceBolt,
 		}
 	} else {
+		// Transition to higher-level Ice skills: prioritize Blizzard
 		skillPoints = []skill.ID{
-			skill.FireBolt,
-			skill.Warmth,
-			skill.Inferno,
-			skill.Blaze,
-			skill.FireBall,
-			skill.FireBall,
-			skill.FireBall,
-			skill.FireBall,
-			skill.FireBall,
-			skill.FireBall,
-			skill.FireBall,
-			skill.FireBall,
-			skill.FireBall,
-			skill.FireBall,
-			skill.FireBall,
-			skill.FireBall,
-			skill.FireBall,
-			skill.FireBall,
-			skill.FireBall,
-			skill.FireBall,
-			skill.FireBall,
-			skill.FireBall,
-			skill.FireBall,
-			skill.FireBall,
-			skill.Meteor,
-			skill.FireMastery,
-			skill.Meteor,
-			skill.Meteor,
-			skill.Meteor,
-			skill.Meteor,
-			skill.Meteor,
-			skill.Meteor,
-			skill.Meteor,
-			skill.Meteor,
-			skill.Meteor,
-			skill.Meteor,
-			skill.Meteor,
-			skill.Meteor,
-			skill.Meteor,
-			skill.Meteor,
-			skill.Meteor,
-			skill.Meteor,
-			skill.Meteor,
-			skill.Meteor,
-			skill.Meteor,
-			skill.FireMastery,
-			skill.FireMastery,
-			skill.FireMastery,
-			skill.FireMastery,
-			skill.FireMastery,
-			skill.FireMastery,
-			skill.FireMastery,
-			skill.FireMastery,
-			skill.FireMastery,
-			skill.FireMastery,
-			skill.FireMastery,
-			skill.FireMastery,
-			skill.FireMastery,
-			skill.FireMastery,
-			skill.FireMastery,
+			skill.IceBolt,
+			skill.Warmth,      // Optional: If utility is needed
+			skill.Blizzard,    // Main AoE skill
+			skill.Blizzard,
+			skill.Blizzard,
+			skill.Blizzard,
+			skill.Blizzard,
+			skill.Blizzard,
+			skill.Blizzard,
+			skill.Blizzard,
+			skill.Blizzard,
+			skill.Blizzard,
+			skill.Blizzard,
+			skill.Blizzard,
+			skill.Blizzard,
+			skill.Blizzard,
+			skill.Blizzard,
+			skill.Blizzard,
+			skill.Blizzard,
+			skill.Blizzard,
+			skill.Blizzard,
+			skill.Blizzard,
+			skill.Blizzard,
+			skill.Blizzard,
 		}
 	}
 
@@ -311,6 +263,7 @@ func (s SorceressLeveling) KillCountess() error {
 func (s SorceressLeveling) KillAndariel() error {
 	return s.killMonster(npc.Andariel, data.MonsterTypeUnique)
 }
+
 func (s SorceressLeveling) KillSummoner() error {
 	return s.killMonster(npc.Summoner, data.MonsterTypeUnique)
 }
@@ -351,6 +304,7 @@ func (s SorceressLeveling) KillCouncil() error {
 func (s SorceressLeveling) KillMephisto() error {
 	return s.killMonster(npc.Mephisto, data.MonsterTypeUnique)
 }
+
 func (s SorceressLeveling) KillIzual() error {
 	m, _ := s.Data.Monsters.FindOne(npc.Izual, data.MonsterTypeUnique)
 	_ = step.SecondaryAttack(skill.StaticField, m.UnitID, s.staticFieldCasts(), step.Distance(1, 5))
@@ -377,14 +331,21 @@ func (s SorceressLeveling) KillDiablo() error {
 			}
 
 			// Keep waiting...
-			time.Sleep(200)
+			time.Sleep(200 * time.Millisecond) // Added unit for sleep duration
 			continue
 		}
 
 		diabloFound = true
 		s.Logger.Info("Diablo detected, attacking")
 
-		_ = step.SecondaryAttack(skill.StaticField, diablo.UnitID, s.staticFieldCasts(), step.Distance(1, 5))
+		// Prefer Blizzard or IceBolt instead of StaticField for attacking
+		if _, found := s.Data.KeyBindings.KeyBindingForSkill(skill.Blizzard); found {
+			_ = step.SecondaryAttack(skill.Blizzard, diablo.UnitID, 1, step.Distance(1, 5))
+		} else if _, found := s.Data.KeyBindings.KeyBindingForSkill(skill.IceBolt); found {
+			_ = step.SecondaryAttack(skill.IceBolt, diablo.UnitID, 4, step.Distance(1, 5))
+		} else {
+			_ = step.SecondaryAttack(skill.StaticField, diablo.UnitID, s.staticFieldCasts(), step.Distance(1, 5))
+		}
 
 		return s.killMonster(npc.Diablo, data.MonsterTypeUnique)
 	}
